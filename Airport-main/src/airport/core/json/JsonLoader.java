@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 public class JsonLoader {
 
     public void loadPassengers(String filepath) {
-        try (InputStream is = new FileInputStream(filepath)) {
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("Airport-main\\src\\json\\passengers.json");) {
             JSONArray array = new JSONArray(new JSONTokener(is));
 
             for (int i = 0; i < array.length(); i++) {
@@ -143,11 +143,12 @@ public class JsonLoader {
     public static void loadAll() {
     JsonLoader loader = new JsonLoader();
 
-    String basePath = "C:\\Users\\becer\\Downloads\\Parcial3Poo\\Airport-main\\src\\json"; 
-    String passengersFile = basePath + "passengers.json";
+    String basePath = "Airport-main/src/json/"; 
+    String passengersFile = "Airport-main\\src\\json\\passengers.json";
     String planesFile = basePath + "planes.json";
     String locationsFile = basePath + "locations.json";
     String flightsFile = basePath + "flights.json";
+    
 
     System.out.println("== Iniciando carga de datos desde archivos JSON ==");
 
