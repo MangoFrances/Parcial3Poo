@@ -143,7 +143,7 @@ public class JsonLoader {
     public static void loadAll() {
     JsonLoader loader = new JsonLoader();
 
-    String basePath = "json/"; 
+    String basePath = "C:\\Users\\becer\\Downloads\\Parcial3Poo\\Airport-main\\src\\json"; 
     String passengersFile = basePath + "passengers.json";
     String planesFile = basePath + "planes.json";
     String locationsFile = basePath + "locations.json";
