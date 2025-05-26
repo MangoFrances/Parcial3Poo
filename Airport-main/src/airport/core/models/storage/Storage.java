@@ -5,131 +5,151 @@ import airport.core.models.Passenger;
 import java.util.ArrayList;
 import airport.core.models.Location;
 import airport.core.models.Flight;
+import airport.core.ports.IStorage;
+import airport.core.ports.ModelChangeListener;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Storage {
+public class Storage implements IStorage {
 
-    private static Storage instance;
-    private final ArrayList<Location> locations;
-    private final ArrayList<Passenger> passengers;
-    private final ArrayList<Plane> planes;
-    private final ArrayList<Flight> flights;
-
-    private Storage() {
-        this.passengers = new ArrayList<>();
-        this.planes = new ArrayList<>();
-        this.locations = new ArrayList<>();
-        this.flights = new ArrayList<>();
-
-    }
+    private static final Storage INSTANCE = new Storage();
 
     public static Storage getInstance() {
-        if (instance == null) {
-            instance = new Storage();
-        }
-        return instance;
+        return INSTANCE;
     }
 
-   
-    public boolean addPassenger(Passenger p) {
-        if (getPassengerById(p.getId()) != null) {
-            return false;
-        }
-        passengers.add(p);
-        return true;
+    private Storage() {
     }
 
-    public Passenger getPassengerById(long id) {
-        for (Passenger p : passengers) {
-            if (p.getId() == id) {
-                return p;
-            }
-        }
-        return null;
+    private final List<Flight> flights = new ArrayList<>();
+    private final List<Passenger> passengers = new ArrayList<>();
+    private final List<Plane> planes = new ArrayList<>();
+    private final List<Location> locations = new ArrayList<>();
+
+    private final List<ModelChangeListener> listeners = new CopyOnWriteArrayList<>();
+
+    public void addListener(ModelChangeListener l) {
+        listeners.add(l);
     }
 
-    public ArrayList<Passenger> getAllPassengersCopy() {
-        ArrayList<Passenger> copyList = new ArrayList<>();
-        for (Passenger p : passengers) {
-            copyList.add(p.copy());
-        }
-        return copyList;
+    public void removeListener(ModelChangeListener l) {
+        listeners.remove(l);
     }
 
-    
-    public boolean addPlane(Plane p) {
-        if (getPlaneById(p.getId()) != null) {
-            return false;
+    private void notifyChange(String entity) {
+        for (ModelChangeListener l : listeners) {
+            l.onModelChanged(entity);
         }
-        planes.add(p);
-        return true;
     }
 
-    public Plane getPlaneById(String id) {
-        for (Plane p : planes) {
-            if (p.getId().equals(id)) {
-                return p;
-            }
-        }
-        return null;
-    }
-
-    public ArrayList<Plane> getAllPlanesCopy() {
-        ArrayList<Plane> copyList = new ArrayList<>();
-        for (Plane p : planes) {
-            copyList.add(p.copy());
-        }
-        return copyList;
-    }
-
-    public boolean addLocation(Location loc) {
-        if (getLocationById(loc.getAirportId()) != null) {
-            return false;
-        }
-        locations.add(loc);
-        return true;
-    }
-
-    public Location getLocationById(String id) {
-        for (Location l : locations) {
-            if (l.getAirportId().equals(id)) {
-                return l;
-            }
-        }
-        return null;
-    }
-
-    public ArrayList<Location> getAllLocationsCopy() {
-        ArrayList<Location> copyList = new ArrayList<>();
-        for (Location l : locations) {
-            copyList.add(l.copy());
-        }
-        return copyList;
-    }
-
-    public boolean addFlight(Flight flight) {
-        if (getFlightById(flight.getId()) != null) {
-            return false;
-        }
-        flights.add(flight);
-        return true;
-    }
-
+    @Override
     public Flight getFlightById(String id) {
-        for (Flight f : flights) {
-            if (f.getId().equals(id)) {
-                return f;
-            }
-        }
-        return null;
+        return flights.stream()
+                .filter(f -> f.getId().equals(id))
+                .findFirst()
+                .orElse(null);
     }
 
-    public ArrayList<Flight> getAllFlightsCopy() {
-        ArrayList<Flight> copyList = new ArrayList<>();
+    @Override
+    public List<Flight> getAllFlightsCopy() {
+        List<Flight> copy = new ArrayList<>();
         for (Flight f : flights) {
-            copyList.add(f.copy());
+            copy.add(f.copy());
         }
-        return copyList;
+        return copy;
+    }
+
+    @Override
+    public void addFlight(Flight flight) {
+        flights.add(flight);
+        notifyChange("flight");
+    }
+
+    @Override
+    public Passenger getPassengerById(long id) {
+        return passengers.stream()
+                .filter(p -> p.getId() == id)
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public void addPassenger(Passenger p) {
+        passengers.add(p);
+        notifyChange("passenger");
+    }
+
+    @Override
+    public Plane getPlaneById(String id) {
+        return planes.stream()
+                .filter(pl -> pl.getId().equals(id))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public void addPlane(Plane plane) {
+        planes.add(plane);
+        notifyChange("plane");
+    }
+
+    @Override
+    public Location getLocationById(String id) {
+        return locations.stream()
+                .filter(l -> l.getAirportId().equals(id))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public void addLocation(Location loc) {
+        locations.add(loc);
+        notifyChange("location");
+    }
+
+    @Override
+    public List<Passenger> getAllPassengersCopy() {
+        List<Passenger> copy = new ArrayList<>();
+        for (Passenger p : passengers) {
+            copy.add(p.copy());
+        }
+        return copy;
+    }
+
+    @Override
+    public List<Plane> getAllPlanesCopy() {
+        List<Plane> copy = new ArrayList<>();
+        for (Plane pl : planes) {
+            copy.add(pl.copy());
+        }
+        return copy;
+    }
+
+    @Override
+    public List<Location> getAllLocationsCopy() {
+        List<Location> copy = new ArrayList<>();
+        for (Location loc : locations) {
+            copy.add(loc.copy());
+        }
+        return copy;
+    }
+
+    @Override
+    public void flightUpdated() {
+        notifyChange("flight");
+    }
+
+    @Override
+    public void passengerUpdated() {
+        notifyChange("passenger");
+    }
+
+    public void clearAll() {
+        flights.clear();
+        passengers.clear();
+        planes.clear();
+        locations.clear();
+        notifyChange("clear");
     }
 
 }
-//Arreglar el mostar los json 

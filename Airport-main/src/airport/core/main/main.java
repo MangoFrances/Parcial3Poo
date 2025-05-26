@@ -4,34 +4,28 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import airport.core.json.JsonLoader;
 import airport.core.models.storage.Storage;
 import airport.core.view.AirportFrame;
+
 import java.awt.EventQueue;
 
-/**
- *
- * @author becer
- */
-import javax.swing.*;
-
-public class main {
+public class Main {
 
     public static void main(String[] args) {
+        System.out.println("CLASE CORRECTA");
+      
+        FlatDarkLaf.setup();
 
         JsonLoader loader = new JsonLoader();
-        loader.loadAll("resources/json");
+        loader.loadAll("resources/json");               
+        Storage storage = Storage.getInstance();
+        System.out.printf("Pasajeros cargados: %d%n", storage.getAllPassengersCopy().size());
+        System.out.printf("Vuelos cargados:    %d%n", storage.getAllFlightsCopy().size());
 
-        System.out.println("Pasajeros cargados: "
-                + airport.core.models.storage.Storage.getInstance()
-                        .getAllPassengersCopy().size());
-
+        /* 3 ▪ Lanzar la ventana principal en el EDT */
         EventQueue.invokeLater(() -> {
             AirportFrame frame = new AirportFrame();
-
-            frame.setLocationRelativeTo(null);
+            frame.refreshTables();                     
+            frame.setLocationRelativeTo(null);          
             frame.setVisible(true);
         });
-
-        System.out.println(Storage.getInstance().getAllFlightsCopy().size());
-        System.out.println("Pasajeros: " + Storage.getInstance().getAllPassengersCopy().size());
-        System.out.println("Vuelos:    " + Storage.getInstance().getAllFlightsCopy().size());
     }
 }

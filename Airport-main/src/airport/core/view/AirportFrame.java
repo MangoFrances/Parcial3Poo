@@ -13,12 +13,22 @@ import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 
-public class AirportFrame extends javax.swing.JFrame {
+import java.util.List;
+import javax.swing.table.DefaultTableModel;
+
+import airport.core.controllers.utils.Response;
+import airport.core.models.Flight;
+import airport.core.models.storage.Storage;
+import airport.core.ports.ModelChangeListener;
+
+public class AirportFrame extends javax.swing.JFrame
+        implements ModelChangeListener {
 
     /**
      * Creates new form AirportFrame
      */
     private int x, y;
+    private final Storage storage = Storage.getInstance();
     private final airport.core.controllers.PassengerController passengerController;
     private final airport.core.controllers.PlaneController planeController;
     private final airport.core.controllers.LocationController locationController;
@@ -26,6 +36,9 @@ public class AirportFrame extends javax.swing.JFrame {
 
     public AirportFrame() {
         initComponents();
+
+        storage.addListener(this);  // ⬅ se suscribe
+        refreshAllTables();
 
         this.passengerController = new airport.core.controllers.PassengerController();
         this.planeController = new airport.core.controllers.PlaneController();
@@ -1856,37 +1869,6 @@ public class AirportFrame extends javax.swing.JFrame {
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) {
-        System.setProperty("flatlaf.useNativeLibrary", "false");
-
-        try {
-            UIManager.setLookAndFeel(new FlatDarkLaf());
-        } catch (Exception ex) {
-            System.err.println("Failed to initialize LaF");
-        }
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new AirportFrame().setVisible(true);
-            }
-        });
-        
-
-//    public void refreshTables() {
-//        List<Flight> flights = flightController.getAllFlights().data();
-//        DefaultTableModel model = (DefaultTableModel) tblFlights.getModel();
-//        model.setRowCount(0);               // limpia
-//        for (Flight f : flights) {
-//            model.addRow(new Object[]{
-//                f.getCode(),
-//                f.getOrigin().getName(),
-//                 f.getDepartureTime()
-//               f.getDestination().getName(),
-//            });
-//        }
-//        model.fireTableDataChanged();
-//    }
-}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox<String> DAY;
@@ -2029,4 +2011,133 @@ public class AirportFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButton user;
     private javax.swing.JComboBox<String> userSelect;
     // End of variables declaration//GEN-END:variables
+
+    public void refreshTables() {
+
+        Response resp = flightController.getAllFlights();
+        List<Flight> flights = (List<Flight>) resp.getObject();
+
+        DefaultTableModel model = (DefaultTableModel) tblFlights.getModel();
+        model.setRowCount(0);
+
+        for (Flight f : flights) {
+
+            String scaleId = (f.getScaleLocation() != null)
+                    ? f.getScaleLocation().getAirportId()
+                    : "-";
+
+            model.addRow(new Object[]{
+                f.getId(),
+                f.getDepartureLocation().getAirportId(),
+                f.getArrivalLocation().getAirportId(),
+                scaleId,
+                f.getDepartureDate(),
+                f.calculateArrivalDate(),
+                f.getPlane().getId()
+            });
+        }
+
+        model.fireTableDataChanged();
+
+        System.out.println();
+    }
+
+    @Override
+    public void onModelChanged(String entity) {
+        switch (entity) {
+            case "flight" ->
+                refreshFlightsTable();
+            case "passenger" ->
+                refreshPassengersTable();
+            case "plane" ->
+                refreshPlanesTable();
+            case "location" ->
+                refreshLocationsTable();
+            case "clear" ->
+                refreshAllTables();
+        }
+    }
+
+    private void refreshAllTables() {
+        refreshFlightsTable();
+        refreshPassengersTable();
+        refreshPlanesTable();
+        refreshLocationsTable();
+    }
+
+    private void refreshFlightsTable() {
+        var flights = Storage.getInstance().getAllFlightsCopy();
+        var model = (javax.swing.table.DefaultTableModel) tblFlights.getModel();
+        model.setRowCount(0);
+        for (var f : flights) {
+            String scale = (f.getScaleLocation() != null)
+                    ? f.getScaleLocation().getAirportId()
+                    : "-";
+            model.addRow(new Object[]{
+                f.getId(),
+                f.getDepartureLocation().getAirportId(),
+                f.getArrivalLocation().getAirportId(),
+                scale,
+                f.getDepartureDate(),
+                f.calculateArrivalDate(),
+                f.getPlane().getId()
+            });
+        }
+        model.fireTableDataChanged();
+    }
+
+    private void refreshPassengersTable() {
+        var passengers = Storage.getInstance().getAllPassengersCopy();
+        var model = (javax.swing.table.DefaultTableModel) tblPassengers.getModel();
+        model.setRowCount(0);
+        for (var p : passengers) {
+            model.addRow(new Object[]{
+                p.getId(),
+                p.getFullname(),
+                p.getBirthDate(),
+                "+" + p.getCountryPhoneCode() + " " + p.getPhone(),
+                p.getCountry()
+            });
+        }
+        model.fireTableDataChanged();
+    }
+
+    private void refreshPlanesTable() {
+        var planes = Storage.getInstance().getAllPlanesCopy();
+        var model = (javax.swing.table.DefaultTableModel) tblPlanes.getModel();
+        model.setRowCount(0);
+        for (var pl : planes) {
+            model.addRow(new Object[]{
+                pl.getId(),
+                pl.getBrand(),
+                pl.getModel(),
+                pl.getMaxCapacity(),
+                pl.getAirline()
+            });
+        }
+        model.fireTableDataChanged();
+    }
+
+    private void refreshLocationsTable() {
+        var locs = Storage.getInstance().getAllLocationsCopy();
+        var model = (javax.swing.table.DefaultTableModel) tblLocations.getModel();
+        model.setRowCount(0);
+        for (var l : locs) {
+            model.addRow(new Object[]{
+                l.getAirportId(),
+                l.getAirportName(),
+                l.getAirportCity(),
+                l.getAirportCountry(),
+                l.getAirportLatitude(),
+                l.getAirportLongitude()
+            });
+        }
+        model.fireTableDataChanged();
+    }
+
+    @Override
+    public void dispose() {
+        storage.removeListener(this);
+        super.dispose();
+    }
 }
