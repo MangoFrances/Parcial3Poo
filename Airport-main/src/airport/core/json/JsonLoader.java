@@ -1,9 +1,5 @@
 package airport.core.json;
 
-/**
- *
- * @author becer
- */
 import airport.core.models.Flight;
 import airport.core.models.Location;
 import airport.core.models.Passenger;
@@ -21,7 +17,7 @@ import java.time.LocalDateTime;
 public class JsonLoader {
 
     public void loadPassengers(String filepath) {
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream("Airport-main\\src\\json\\passengers.json");) {
+        try (InputStream is = new FileInputStream(filepath)) {
             JSONArray array = new JSONArray(new JSONTokener(is));
 
             for (int i = 0; i < array.length(); i++) {
@@ -139,25 +135,24 @@ public class JsonLoader {
             System.err.println("Error al cargar vuelos: " + e.getMessage());
         }
     }
-    
-    public static void loadAll() {
-    JsonLoader loader = new JsonLoader();
 
-    String basePath = "Airport-main/src/json/"; 
-    String passengersFile = "Airport-main\\src\\json\\passengers.json";
-    String planesFile = basePath + "planes.json";
-    String locationsFile = basePath + "locations.json";
-    String flightsFile = basePath + "flights.json";
-    
+    public static void loadAll(String resourcesjson) {
+        JsonLoader loader = new JsonLoader();
 
-    System.out.println("== Iniciando carga de datos desde archivos JSON ==");
+        String basePath = "src/json/";
+        String passengersFile = basePath + "passengers.json";
+        String planesFile = basePath + "planes.json";
+        String locationsFile = basePath + "locations.json";
+        String flightsFile = basePath + "flights.json";
 
-    loader.loadPassengers(passengersFile);
-    loader.loadPlanes(planesFile);
-    loader.loadLocations(locationsFile);
-    loader.loadFlights(flightsFile);
+        System.out.println("== Iniciando carga de datos desde archivos JSON ==");
 
-    System.out.println("== Carga completa ✅ ==");
+        loader.loadPassengers(passengersFile);
+        loader.loadPlanes(planesFile);
+        loader.loadLocations(locationsFile);
+        loader.loadFlights(flightsFile);
+
+        System.out.println("== Carga completa ✅ ==");
+    }
+
 }
-}
-
